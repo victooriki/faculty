@@ -1,5 +1,5 @@
 public class ExercicioJava {
-
+    
     public void printHelloWord() {
         String strHelloWord = "Olá, mundo!";
         System.out.println(strHelloWord);
