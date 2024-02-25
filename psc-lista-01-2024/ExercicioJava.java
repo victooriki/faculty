@@ -8,5 +8,5 @@ public class ExercicioJava {
     public static void main(String[] args) {
         ExercicioJava exercicio = new ExercicioJava();
         exercicio.printHelloWord();
-    }cla
+    }
 }
