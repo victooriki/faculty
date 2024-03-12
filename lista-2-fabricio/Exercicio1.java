@@ -1,3 +1,6 @@
+// 1. Crie um algoritmo que leia um valor de hora (HH:MM) e
+// informe (calcule) quantos minutos se passaram desde o início do dia (00:00).
+
 import java.util.Calendar;
 import java.util.Scanner;
 

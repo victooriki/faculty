@@ -1,3 +1,5 @@
+// 4. Crie um programa para calcular a regra de três.
+
 import java.util.Scanner;
 
 public class Exercicio4 {

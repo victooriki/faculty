@@ -1,3 +1,6 @@
+// 3. Escreva um programa que calcule o teorema de Pitágoras,
+// representado pela expressão: c =√(a^2+b^2 )
+
 import java.text.DecimalFormat;
 import java.util.Scanner;
 
