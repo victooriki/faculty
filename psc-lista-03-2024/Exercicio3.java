@@ -31,13 +31,13 @@ public class Exercicio3 {
         }
         
         if (valorDelta < 0) {
-            System.out.println("Esta equação não possui raízes reais.");
+            System.out.println("A equação não possui raízes reais.");
             scanner.close();
             return;
         }
         
         if (valorDelta == 0) {
-            System.out.println("Esta equação possui duas raízes reais iguais.");
+            System.out.println("A equação possui duas raízes reais iguais.");
             raiz = -valorB / (2 * valorA);
             System.out.println("A raiz real da equação é: " + raiz);
             scanner.close();
