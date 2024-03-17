@@ -27,7 +27,6 @@ public class Exercicio6 {
     }
 
     public static int numeroAleatorio(int min, int max){
-
         Random rand = new Random();
         int randomNum = rand.nextInt((max - min) + 1) + min;
     
