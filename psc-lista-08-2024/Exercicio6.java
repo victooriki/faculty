@@ -22,7 +22,7 @@ public class Exercicio6 {
             System.out.print("Deseja converter outro horário? (s/n): ");
             resposta = scanner.nextLine();
             
-            if (!resposta.equalsIgnoreCase("s") || !resposta.equalsIgnoreCase("S")) {
+            if (!resposta.equalsIgnoreCase("s")) {
                 break;
             }
         }
