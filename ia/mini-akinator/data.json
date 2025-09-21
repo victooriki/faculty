@@ -70,9 +70,17 @@
                     }
                 },
                 "no": {
-                    "text": "Cogumelo",
-                    "yes": null,
-                    "no": null
+                    "text": "\u00c9 um jogador de futebol?",
+                    "yes": {
+                        "text": "Cristiano Ronaldo",
+                        "yes": null,
+                        "no": null
+                    },
+                    "no": {
+                        "text": "Cogumelo",
+                        "yes": null,
+                        "no": null
+                    }
                 }
             }
         }
