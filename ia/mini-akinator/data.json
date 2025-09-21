@@ -28,9 +28,17 @@
             "no": {
                 "text": "Vive na selva?",
                 "yes": {
-                    "text": "Le\u00e3o",
-                    "yes": null,
-                    "no": null
+                    "text": "\u00c9 um animal alto?",
+                    "yes": {
+                        "text": "Girafa",
+                        "yes": null,
+                        "no": null
+                    },
+                    "no": {
+                        "text": "Le\u00e3o",
+                        "yes": null,
+                        "no": null
+                    }
                 },
                 "no": {
                     "text": "\u00c1guia",

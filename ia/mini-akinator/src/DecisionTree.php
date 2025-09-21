@@ -42,6 +42,11 @@ class DecisionTree
         echo $node->text . " (s/n): ";
         $answer = strtolower(trim(fgets(STDIN)));
 
+        if (!in_array($answer, ['s', 'n'])) {
+            echo "Resposta inválida. Por favor, responda com 's' ou 'n'.\n";
+            return $this->ask($node);
+        }
+
         if ($answer === 's') {
             $node->yes = $this->ask($node->yes);
         } else {
