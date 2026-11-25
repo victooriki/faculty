@@ -7,6 +7,12 @@ Continuação do pré-projeto da Etapa 1 (`../../Primeira entrega`). O sistema i
 sequência GRAFCET E0–E5/EF, a escala 4–20 mA do SMT100, os intertravamentos R01–R07 e
 a comunicação Modbus TCP entre CLP e planta virtual, com supervisão web.
 
+## Vídeo da demonstração
+
+[`../video/demonstracao_sistema.mp4`](../video/demonstracao_sistema.mp4) (1 min 38 s): ciclo dispensado,
+ciclo completo E0→E5, linha obstruída (alarme 4), falta de água (alarme 2), sinal de 0 mA
+(alarme 1) e comunicação congelada (alarme 10), cada falha seguida de Reset.
+
 ## Arquitetura
 
 ```
