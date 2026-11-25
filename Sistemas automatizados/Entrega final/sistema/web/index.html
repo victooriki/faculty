@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Supervisão — Irrigação do canteiro</title>
+<style>
+  :root {
+    --bg: #0f1714; --panel: #17221d; --panel2: #1e2b25; --line: #2c3d35;
+    --text: #e6efe9; --muted: #8fa69a; --green: #3ecf7a; --blue: #4aa8ff;
+    --amber: #f2b33d; --red: #ff5a5a; --soil: #6b4a2b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+           padding: 12px 20px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  header h1 { font-size: 18px; margin: 0 auto 0 0; }
+  .pill { padding: 4px 10px; border-radius: 999px; background: var(--panel2);
+          border: 1px solid var(--line); font-weight: 600; white-space: nowrap; }
+  .ok { color: var(--green); } .bad { color: var(--red); } .warn { color: var(--amber); }
+  main { display: grid; gap: 16px; padding: 16px 20px;
+         grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
+  @media (max-width: 980px) { main { grid-template-columns: 1fr; } }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+  section h2 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase;
+               letter-spacing: .06em; color: var(--muted); }
+  .col { display: grid; gap: 16px; align-content: start; }
+  .btns { display: flex; gap: 10px; flex-wrap: wrap; }
+  button { cursor: pointer; border: 0; border-radius: 8px; padding: 10px 18px;
+           font-weight: 700; font-size: 14px; color: #08110c; }
+  .b-start { background: var(--green); } .b-stop { background: var(--amber); }
+  .b-reset { background: var(--blue); }
+  .b-ghost { background: var(--panel2); color: var(--text); border: 1px solid var(--line);
+             padding: 7px 12px; font-weight: 600; font-size: 13px; }
+  .b-ghost.on { background: var(--red); color: #fff; border-color: var(--red); }
+  .steps { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 12px; }
+  .step { text-align: center; padding: 8px 2px; border-radius: 8px; background: var(--panel2);
+          border: 1px solid var(--line); font-weight: 700; color: var(--muted); font-size: 13px; }
+  .step small { display: block; font-weight: 500; font-size: 10px; }
+  .step.act { background: var(--green); color: #08110c; border-color: var(--green); }
+  .step.ef.act { background: var(--red); color: #fff; border-color: var(--red); }
+  .alarm { margin-top: 12px; padding: 10px 12px; border-radius: 8px; background: var(--panel2); }
+  .alarm.on { background: #3a1717; border: 1px solid var(--red); }
+  svg text { font-family: inherit; }
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .kpi { background: var(--panel2); border-radius: 8px; padding: 10px; }
+  .kpi b { display: block; font-size: 24px; }
+  .kpi span { color: var(--muted); font-size: 12px; }
+  table { width: 100%; border-collapse: collapse; }
+  td, th { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--line); font-size: 13px; }
+  th { color: var(--muted); font-weight: 600; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px;
+         background: #44544c; vertical-align: middle; }
+  .dot.on { background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .dot.off-bad { background: var(--red); }
+  #log { max-height: 260px; overflow: auto; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
+  #log div { padding: 3px 0; border-bottom: 1px dashed var(--line); }
+  .tag { display: inline-block; min-width: 82px; font-weight: 700; }
+  .t-FALHA { color: var(--red); } .t-CONCLUIDO { color: var(--green); }
+  .t-CANCELADO, .t-BLOQUEADO { color: var(--amber); } .t-RESET, .t-INICIAR { color: var(--blue); }
+  .t-ETAPA { color: var(--muted); }
+  .tests { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+  input[type=range] { flex: 1; min-width: 140px; }
+  canvas { width: 100%; height: 220px; display: block; }
+  .legend { color: var(--muted); font-size: 12px; margin-top: 6px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🌱 Irrigação automatizada de um canteiro — Supervisão</h1>
+  <span class="pill" id="pCom">Comunicação…</span>
+  <span class="pill" id="pEtapa">—</span>
+  <span class="pill" id="pCiclo">Ciclo 0</span>
+</header>
+
+<main>
+  <div class="col">
+    <section>
+      <h2>Processo</h2>
+      <svg id="sinotico" viewBox="0 30 640 225" width="100%">
+        <!-- reservatório -->
+        <rect x="20" y="60" width="110" height="150" rx="6" fill="none" stroke="#5c7468" stroke-width="2"/>
+        <rect id="agua" x="22" y="90" width="106" height="118" fill="#2a6fb5" opacity=".75"/>
+        <text x="75" y="50" text-anchor="middle" fill="#8fa69a" font-size="12">Reservatório</text>
+        <text id="txtBoia" x="75" y="232" text-anchor="middle" font-size="12" fill="#8fa69a">boia</text>
+        <!-- tubulação -->
+        <path d="M130 190 H200 M260 190 H330 M390 190 H450 V120" stroke="#5c7468" stroke-width="8" fill="none"/>
+        <path id="fluxoAnim" d="M130 190 H200 M260 190 H330 M390 190 H450 V120" stroke="#6fc1ff"
+              stroke-width="3" fill="none" stroke-dasharray="8 8" opacity="0"/>
+        <!-- bomba -->
+        <circle id="bomba" cx="230" cy="190" r="28" fill="#2a3832" stroke="#5c7468" stroke-width="2"/>
+        <path d="M218 176 L248 190 L218 204 Z" fill="#8fa69a"/>
+        <text x="230" y="240" text-anchor="middle" fill="#8fa69a" font-size="12">Bomba</text>
+        <!-- válvula -->
+        <path id="valvula" d="M335 170 L385 210 L385 170 L335 210 Z" fill="#2a3832" stroke="#5c7468" stroke-width="2"/>
+        <rect x="355" y="150" width="10" height="20" fill="#5c7468"/>
+        <text x="360" y="240" text-anchor="middle" fill="#8fa69a" font-size="12">Válvula NF</text>
+        <text id="txtValv" x="360" y="140" text-anchor="middle" fill="#8fa69a" font-size="11">fechada</text>
+        <!-- fluxo -->
+        <circle id="chaveFluxo" cx="420" cy="190" r="7" fill="#44544c"/>
+        <text x="420" y="215" text-anchor="middle" fill="#8fa69a" font-size="11">fluxo</text>
+        <!-- canteiro -->
+        <rect x="470" y="110" width="150" height="100" rx="6" id="solo" fill="#6b4a2b"/>
+        <g fill="#3ecf7a"><path d="M500 110 q-10 -30 0 -40 q10 10 0 40"/><path d="M545 110 q-10 -30 0 -40 q10 10 0 40"/><path d="M590 110 q-10 -30 0 -40 q10 10 0 40"/></g>
+        <text x="545" y="150" text-anchor="middle" fill="#fff" font-size="22" font-weight="700" id="txtU">—</text>
+        <text x="545" y="172" text-anchor="middle" fill="#f0e2d0" font-size="12" id="txtI">— mA</text>
+        <text x="545" y="195" text-anchor="middle" fill="#f0e2d0" font-size="11">SMT100 (simulado)</text>
+        <text x="545" y="240" text-anchor="middle" fill="#8fa69a" font-size="12">Canteiro</text>
+      </svg>
+      <div class="btns">
+        <button class="b-start" onclick="cmd('iniciar')">▶ Iniciar</button>
+        <button class="b-stop" onclick="cmd('parar')">■ Parar</button>
+        <button class="b-reset" onclick="cmd('reset')">↺ Reset</button>
+      </div>
+      <div class="steps" id="steps"></div>
+      <div class="alarm" id="alarme">Sem alarme</div>
+    </section>
+
+    <section>
+      <h2>Tendência da umidade (% VWC)</h2>
+      <canvas id="trend"></canvas>
+      <div class="legend">Linha verde: umidade medida pelo CLP · tracejado âmbar: limiar 30% · tracejado azul: meta 40% · faixa azul: bomba ligada</div>
+    </section>
+
+    <section>
+      <h2>Indicadores</h2>
+      <div class="kpis">
+        <div class="kpi"><b id="kIrr">0</b><span>ciclos irrigados</span></div>
+        <div class="kpi"><b id="kDisp">0</b><span>ciclos dispensados</span></div>
+        <div class="kpi"><b id="kCanc">0</b><span>cancelados</span></div>
+        <div class="kpi"><b id="kDur">—</b><span>duração último ciclo</span></div>
+      </div>
+      <table style="margin-top:10px"><tbody id="tFalhas"></tbody></table>
+    </section>
+  </div>
+
+  <div class="col">
+    <section>
+      <h2>Permissivos de partida (R01)</h2>
+      <table><tbody id="tPerm"></tbody></table>
+    </section>
+
+    <section>
+      <h2>Mapa de E/S (memória-imagem do CLP)</h2>
+      <table>
+        <thead><tr><th>Identificador</th><th>Tipo</th><th>Modbus</th><th>Valor</th></tr></thead>
+        <tbody id="tIO"></tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Modo de teste — injeção de falhas na planta</h2>
+      <div class="row">
+        <label>Umidade do solo</label>
+        <input type="range" min="0" max="80" step="1" id="sU" onchange="setU(this.value)">
+        <b id="sUv">—</b>
+      </div>
+      <div class="row">
+        <span>Corrente forçada:</span>
+        <button class="b-ghost" onclick="falha({corrente_forcada_ma:0})">0 mA (fio rompido)</button>
+        <button class="b-ghost" onclick="falha({corrente_forcada_ma:22})">22 mA</button>
+        <button class="b-ghost" onclick="falha({corrente_forcada_ma:null})">normal</button>
+      </div>
+      <div class="tests" id="tests"></div>
+      <div class="row" style="margin-top:10px">
+        <button class="b-ghost" onclick="falha({limpar:true})">Limpar todas as falhas</button>
+        <span id="seguro" class="warn"></span>
+      </div>
+    </section>
+
+    <section>
+      <h2>Registro de eventos</h2>
+      <div id="log"></div>
+    </section>
+  </div>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const STEPS = [[0,'E0','Aguardar'],[1,'E1','Avaliar'],[2,'E2','Abrir'],[3,'E3','Irrigar'],
+               [4,'E4','Estabilizar'],[5,'E5','Concluir'],[9,'EF','Falha']];
+$('steps').innerHTML = STEPS.map(([n,s,d]) =>
+  `<div class="step ${n===9?'ef':''}" id="st${n}">${s}<small>${d}</small></div>`).join('');
+const TESTS = [['sem_agua','Reservatório sem água'],['valvula_travada','Válvula travada fechada'],
+               ['linha_obstruida','Linha obstruída (sem fluxo)'],['perder_fluxo_em','Perder fluxo após 3 s'],
+               ['sensor_valvula_preso','Sensor de válvula preso'],['congelar_comunicacao','Congelar comunicação']];
+$('tests').innerHTML = TESTS.map(([k,t]) =>
+  `<button class="b-ghost" id="f_${k}" onclick="toggle('${k}')">${t}</button>`).join('');
+
+let falhasAtuais = {};
+async function post(url, body) {
+  await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+  atualizar();
+}
+const cmd = a => post('/api/comando', {acao: a});
+const falha = o => post('/api/falha', o);
+const setU = v => post('/api/umidade', {valor: Number(v)});
+function toggle(k) {
+  if (k === 'perder_fluxo_em') return falha({perder_fluxo_em: falhasAtuais[k] >= 0 ? -1 : 3});
+  falha({[k]: !falhasAtuais[k]});
+}
+const dot = (v, bad) => `<span class="dot ${v ? 'on' : (bad ? 'off-bad' : '')}"></span>${v ? '1' : '0'}`;
+
+function desenharTrend(h, lim, meta) {
+  const cv = $('trend'), dpr = window.devicePixelRatio || 1;
+  const W = cv.clientWidth, H = cv.clientHeight;
+  cv.width = W * dpr; cv.height = H * dpr;
+  const g = cv.getContext('2d'); g.scale(dpr, dpr); g.clearRect(0, 0, W, H);
+  const L = 34, R = 8, T = 8, B = 22, ymax = 60;
+  const x = i => L + (W - L - R) * i / Math.max(1, h.length - 1);
+  const y = u => T + (H - T - B) * (1 - Math.min(u, ymax) / ymax);
+  g.font = '11px system-ui'; g.fillStyle = '#8fa69a'; g.strokeStyle = '#2c3d35';
+  for (let u = 0; u <= ymax; u += 10) { g.beginPath(); g.moveTo(L, y(u)); g.lineTo(W - R, y(u)); g.stroke(); g.fillText(u, 8, y(u) + 4); }
+  g.fillStyle = 'rgba(74,168,255,.18)';
+  h.forEach((p, i) => { if (p.b && i) g.fillRect(x(i - 1), T, x(i) - x(i - 1) + .5, H - T - B); });
+  [[lim, '#f2b33d'], [meta, '#4aa8ff']].forEach(([v, c]) => {
+    g.setLineDash([5, 5]); g.strokeStyle = c; g.beginPath(); g.moveTo(L, y(v)); g.lineTo(W - R, y(v)); g.stroke(); });
+  g.setLineDash([]); g.strokeStyle = '#3ecf7a'; g.lineWidth = 2; g.beginPath();
+  h.forEach((p, i) => i ? g.lineTo(x(i), y(p.u)) : g.moveTo(x(i), y(p.u))); g.stroke();
+  if (h.length) { g.fillStyle = '#8fa69a'; g.fillText(`${h[0].t.toFixed(0)} s`, L, H - 6);
+    const s = `${h[h.length - 1].t.toFixed(0)} s`; g.fillText(s, W - R - g.measureText(s).width, H - 6); }
+}
+
+async function atualizar() {
+  let s;
+  try { s = await (await fetch('/api/estado')).json(); } catch { $('pCom').innerHTML = '<span class="bad">Supervisão offline</span>'; return; }
+  const p = s.planta, c = s.clp;
+  falhasAtuais = p.falhas;
+  // cabeçalho
+  $('pCom').innerHTML = c.comunicacao_ok ? '<span class="ok">● Modbus TCP OK</span>' : '<span class="bad">● Comunicação desatualizada</span>';
+  $('pEtapa').textContent = c.etapa_nome;
+  $('pCiclo').textContent = `Ciclo ${c.ciclo}`;
+  STEPS.forEach(([n]) => $('st' + n).classList.toggle('act', n === c.etapa));
+  $('alarme').classList.toggle('on', c.alarme > 0);
+  $('alarme').innerHTML = c.alarme ? `<b class="bad">ALARME ${c.alarme}</b> — ${c.alarme_texto}<br><span class="muted">Corrija a causa, aguarde o repouso (válvula fechada, sem fluxo) e pressione Reset.</span>` : '<span class="ok">Sem alarme</span>';
+  // sinótico
+  $('agua').setAttribute('y', p.agua ? 90 : 196); $('agua').setAttribute('height', p.agua ? 118 : 12);
+  $('txtBoia').textContent = p.agua ? 'boia: água OK' : 'boia: SEM ÁGUA';
+  $('txtBoia').setAttribute('fill', p.agua ? '#8fa69a' : '#ff5a5a');
+  $('bomba').setAttribute('fill', p.bomba ? '#3ecf7a' : '#2a3832');
+  $('valvula').setAttribute('fill', p.posicao_valvula > .99 ? '#3ecf7a' : p.posicao_valvula > 0 ? '#f2b33d' : '#2a3832');
+  $('txtValv').textContent = p.valvula_aberta ? 'aberta' : (p.valvula_energizada ? 'abrindo…' : 'fechada');
+  $('chaveFluxo').setAttribute('fill', p.fluxo ? '#6fc1ff' : '#44544c');
+  $('fluxoAnim').setAttribute('opacity', p.fluxo ? 1 : 0);
+  const u = c.umidade; $('txtU').textContent = `${u.toFixed(1)} %`;
+  $('txtI').textContent = `${p.corrente_ma.toFixed(2)} mA`;
+  const k = Math.min(1, u / 60); $('solo').setAttribute('fill', `rgb(${107 - 60 * k},${74 - 30 * k},${43 - 15 * k})`);
+  $('sUv').textContent = `${p.umidade_real.toFixed(1)} %`;
+  if (document.activeElement !== $('sU')) $('sU').value = p.umidade_real;
+  // falhas ativas
+  TESTS.forEach(([k]) => $('f_' + k).classList.toggle('on', k === 'perder_fluxo_em' ? p.falhas[k] >= 0 : !!p.falhas[k]));
+  $('seguro').textContent = p.modo_seguro ? '⚠ Planta em modo seguro: CLP sem atualizar, atuadores desligados' : '';
+  // permissivos
+  $('tPerm').innerHTML = Object.entries(c.permissivos).map(([k, v]) => `<tr><td>${k}</td><td>${dot(v, true)}</td></tr>`).join('');
+  // E/S
+  const e = c.entradas || {};
+  $('tIO').innerHTML = [
+    ['AI_UMIDADE_mA', 'AI', 'IR 0 (µA)', `${(e.corrente_ma ?? 0).toFixed(3)} mA`],
+    ['DI_AGUA_OK', 'DI', 'DI 0', dot(e.agua_ok)], ['DI_VALVULA_ABERTA', 'DI', 'DI 1', dot(e.valvula_aberta)],
+    ['DI_FLUXO_OK', 'DI', 'DI 2', dot(e.fluxo_ok)], ['DO_BOMBA', 'DO', 'Coil 0', dot(c.bomba)],
+    ['DO_VALVULA', 'DO', 'Coil 1', dot(c.valvula)], ['UMIDADE_pct', 'calc.', 'HR 3 (×10)', `${u.toFixed(2)} %`],
+    ['ETAPA / ALARME_ID', 'estado', 'HR 1 / HR 2', `${c.etapa} / ${c.alarme}`],
+    ['Leituras Modbus', 'diag.', 'ok / erro', `${c.leituras_ok} / ${c.leituras_erro}`],
+  ].map(r => `<tr>${r.map(x => `<td>${x}</td>`).join('')}</tr>`).join('');
+  // indicadores
+  $('kIrr').textContent = c.ciclos_irrigados; $('kDisp').textContent = c.ciclos_dispensados;
+  $('kCanc').textContent = c.ciclos_cancelados; $('kDur').textContent = c.ultima_duracao ? `${c.ultima_duracao} s` : '—';
+  const fc = Object.entries(c.falhas_por_causa);
+  $('tFalhas').innerHTML = fc.length ? '<tr><th>Falhas por causa</th><th>Qtd.</th></tr>' + fc.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('') : '<tr><td class="muted">Nenhuma falha registrada</td></tr>';
+  // eventos
+  $('log').innerHTML = c.eventos.map(ev => `<div>${ev.t.toFixed(1).padStart(7)} s <span class="tag t-${ev.tipo}">${ev.tipo}</span> ${ev.texto}</div>`).join('');
+  desenharTrend(c.historico, s.parametros.limiar, s.parametros.meta);
+}
+setInterval(atualizar, 500); atualizar();
+let off = 0; setInterval(() => { off = (off + 2) % 16; $('fluxoAnim').setAttribute('stroke-dashoffset', -off); }, 60);
+</script>
+</body>
+</html>
